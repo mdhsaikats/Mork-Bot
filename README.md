@@ -1,15 +1,19 @@
 # Mork Bot
 
-Mork Bot is an interactive, expressive robot built with an ESP32 Super Mini, an OLED display, and a variety of sensors. Mork displays animated eyes and reacts to the environment and user interactions, making it feel alive and engaging. Youtube Link : https://youtube.com/shorts/6Psl2-D04oY?si=jbgeNS3dgydOk-Tg
+Mork Bot is an interactive, expressive robot built with an ESP32 Super Mini, an OLED display, a buzzer, and a variety of sensors. Mork displays animated eyes, plays cute sounds, and reacts to the environment and user interactions, making it feel alive and engaging. 
+
+Youtube Demo: https://youtube.com/shorts/6Psl2-D04oY?si=jbgeNS3dgydOk-Tg
 
 ## Features
 
 - **OLED Animated Eyes:** Mork displays a range of emotions and playful eye animations.
-- **Touch Sensor:** Pet Mork to make it show love.
-- **MPU6050 (Accelerometer/Gyro):** Shake Mork to make it angry.
+- **Touch Sensor:** Pet Mork to make it show love (with a cute melody).
+- **MPU6050 (Accelerometer/Gyro):** Shake Mork to make it angry (with a harsh sound).
 - **LDR (Light Sensor):** Mork sleeps when it's dark and wakes up when light returns.
 - **Idle Animations:** Neutral and playful eye roll animations when idle.
 - **Boredom Detection:** Mork gets bored if left alone for too long.
+- **Buzzer:** Mork plays cute, interactive sounds for love, anger, giggle, sleep, wake, and dizzy states.
+- **Giggle Animation:** Touch and hold to trigger a giggle animation with a playful sound.
 
 ## Hardware Used
 
@@ -18,6 +22,7 @@ Mork Bot is an interactive, expressive robot built with an ESP32 Super Mini, an 
 - TTP223 Touch Module (or similar)
 - MPU6050 Accelerometer/Gyro Module
 - LDR (Light Dependent Resistor) + 10kΩ resistor
+- Buzzer (passive or active)
 - Jumper wires, breadboard, or custom PCB
 
 ## Wiring Overview
@@ -37,31 +42,39 @@ Mork Bot is an interactive, expressive robot built with an ESP32 Super Mini, an 
 - **LDR:**
   - One end → 3.3V
   - Other end → GPIO1 (ADC1_CH0) + 10kΩ resistor to GND
+- **Buzzer:**
+  - + (long leg) → GPIO5
+  - - (short leg) → GND
+
+## Connection Diagram
+
+![Connection Diagram](connection-diagram.png)
 
 ## How It Works
 
 - **Idle:** Mork cycles through neutral and eye roll animations.
-- **Touch:** Mork shows a love emotion for a few seconds.
-- **Shake:** Mork shows an angry emotion for a short time.
-- **Darkness:** Mork goes to sleep and ignores other interactions until light returns.
+- **Touch:** Mork shows a love emotion and plays a cute melody.
+- **Shake:** Mork shows an angry emotion and plays a harsh sound.
+- **Darkness:** Mork gets dizzy, then goes to sleep and ignores other interactions until light returns.
+- **Giggle:** Touch and hold to trigger a giggle animation and sound.
 - **Boredom:** If not interacted with for a while, Mork shows a bored face.
 
 ## Customization
 
 - You can customize the eye graphics in `eyes.h`.
-- Adjust thresholds and timings in the `.ino` file to suit your environment and preferences.
+- Adjust thresholds, timings, and sound melodies in the `.ino` file to suit your environment and preferences.
 
 ## Getting Started
 
-1. Wire up the hardware as described above.
+1. Wire up the hardware as described above and in the connection diagram.
 2. Install the required Arduino libraries:
-   - Adafruit SSD1306
-   - Adafruit GFX
-   - Adafruit MPU6050
+  - Adafruit SSD1306
+  - Adafruit GFX
+  - Adafruit MPU6050
 3. Open `mork-bot.ino` in Arduino IDE.
 4. Select the correct ESP32 board and port.
 5. Upload the code.
-6. Enjoy your interactive Mork Bot!
+6. Enjoy your interactive, expressive Mork Bot!
 
 ## License
 

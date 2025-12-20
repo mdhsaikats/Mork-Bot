@@ -1,6 +1,6 @@
 # Mork Bot
 
-Mork Bot is an interactive, expressive robot built with an ESP32 Super Mini, an OLED display, and a variety of sensors. Mork displays animated eyes and reacts to the environment and user interactions, making it feel alive and engaging.
+Mork Bot is an interactive, expressive robot built with an ESP32 Super Mini, an OLED display, and a variety of sensors. Mork displays animated eyes and reacts to the environment and user interactions, making it feel alive and engaging. Youtube Link : https://youtube.com/shorts/6Psl2-D04oY?si=jbgeNS3dgydOk-Tg
 
 ## Features
 

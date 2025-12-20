@@ -191,6 +191,60 @@ unsigned long getBlinkInterval(int mood) {
 }
 
 // -------- DISPLAY HELPERS --------
+void drawMouth(int moodID, unsigned long now) {
+  // Draw a cute mouth at a fixed position, style depends on mood
+  int mx = 48;
+  int my = 48;
+  int mw = 32;
+  int mh = 12;
+  int frame = (now / 400) % 2; // animate open/close every 400ms
+  int cx = mx + mw/2;
+  int cy = my + mh/2;
+  switch (moodID) {
+    case 1: // happy
+      // Smile: lower half of a circle
+      for (int16_t i = -12; i <= 12; i++) {
+        int y = cy + (int)(sqrt(1.0 - (i*i)/144.0) * 8);
+        display.drawPixel(cx + i, y, WHITE);
+        if (frame == 1) display.drawPixel(cx + i, y+2, WHITE);
+      }
+      break;
+    case 5: // sad
+      // Sad: upper half of a circle
+      for (int16_t i = -12; i <= 12; i++) {
+        int y = cy + 8 - (int)(sqrt(1.0 - (i*i)/144.0) * 8);
+        display.drawPixel(cx + i, y, WHITE);
+        if (frame == 1) display.drawPixel(cx + i, y-2, WHITE);
+      }
+      break;
+    case 3: // angry
+      // Flat or slightly downturned
+      display.drawLine(mx+8, my+mh, mx+mw-8, my+mh, WHITE);
+      if (frame == 1) display.drawLine(mx+10, my+mh+2, mx+mw-10, my+mh+2, WHITE);
+      break;
+    case 6: // love
+      // Smile with dimples
+      for (int16_t i = -12; i <= 12; i++) {
+        int y = cy + (int)(sqrt(1.0 - (i*i)/144.0) * 8);
+        display.drawPixel(cx + i, y, WHITE);
+      }
+      display.fillCircle(cx-6, cy+4, 2, WHITE);
+      display.fillCircle(cx+6, cy+4, 2, WHITE);
+      break;
+    default: // neutral or other
+      if (frame == 0) {
+        // Gentle smile
+        for (int16_t i = -10; i <= 10; i++) {
+          int y = cy + (int)(sqrt(1.0 - (i*i)/100.0) * 5);
+          display.drawPixel(cx + i, y, WHITE);
+        }
+      } else {
+        display.drawLine(mx+10, my+mh, mx+mw-10, my+mh, WHITE);
+      }
+      break;
+  }
+}
+
 void drawEyes(int moodID) {
   display.clearDisplay();
 
@@ -201,6 +255,7 @@ void drawEyes(int moodID) {
 
   display.drawBitmap(lx, ly, peyes[moodID][0][0], 32, 32, WHITE);
   display.drawBitmap(rx, ry, peyes[moodID][0][1], 32, 32, WHITE);
+  drawMouth(moodID, millis());
   display.display();
 }
 

@@ -45,6 +45,8 @@ unsigned long lastBlink = 0;
 unsigned long nextBlinkInterval = 0;
 
 bool wasTouched = false;
+unsigned long touchStartTime = 0;
+bool giggleActive = false;
 
 // -------- FUNCTION PROTOTYPES -----------
 void drawEyes(int moodID);
@@ -52,6 +54,7 @@ void forceMood(int moodID);
 void blink();
 void updateEyeOffset();
 unsigned long getBlinkInterval(int mood);
+void giggle(unsigned long now);
 
 // ---------------------------------------
 void setup() {
@@ -126,8 +129,25 @@ void loop() {
     lastInteraction = now;
     blink();
     drawEyes(6);  // love eyes
+    touchStartTime = now;
+  }
+  // Touch hold detection
+  if (isTouched && wasTouched) {
+    if (touchStartTime == 0) touchStartTime = now;
+    if (!giggleActive && (now - touchStartTime > 2000)) {
+      giggleActive = true;
+      giggle(now);
+      // Reset giggle after animation
+      giggleActive = false;
+      touchStartTime = 0;
+    }
+  }
+  if (!isTouched) {
+    touchStartTime = 0;
+    giggleActive = false;
   }
   wasTouched = isTouched;
+// ...existing code...
 
   // -------- SHAKE --------
   if (movement > SHAKE_THRESHOLD && currentState == IDLE) {
@@ -277,4 +297,32 @@ void updateEyeOffset() {
   int r = random(0, 5);
   eyeOffsetX = (r == 1) ? -5 : (r == 2) ? 5 : 0;
   eyeOffsetY = (r == 3) ? -4 : (r == 4) ? 4 : 0;
+}
+
+// -------- GIGGLE ANIMATION --------
+void giggle(unsigned long now) {
+  for (int i = 0; i < 4; i++) {
+    display.clearDisplay();
+    // Eyes (closed or open)
+    if (i % 2 == 0) {
+      display.drawBitmap(20, 8, eye0, 32, 32, WHITE);
+      display.drawBitmap(74, 8, eye0, 32, 32, WHITE);
+    } else {
+      display.drawBitmap(20, 8, peyes[1][0][0], 32, 32, WHITE);
+      display.drawBitmap(74, 8, peyes[1][0][1], 32, 32, WHITE);
+    }
+    // Wavy mouth
+    int mx = 48;
+    int my = 48;
+    int mw = 32;
+    int mh = 12;
+    int cx = mx + mw/2;
+    int cy = my + mh/2;
+    for (int16_t x = -12; x <= 12; x++) {
+      int y = cy + (int)(sin((x + i*4) * 0.4) * 4);
+      display.drawPixel(cx + x, y, WHITE);
+    }
+    display.display();
+    delay(120);
+  }
 }

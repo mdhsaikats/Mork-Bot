@@ -5,144 +5,200 @@
 #include <Adafruit_Sensor.h>
 #include "eyes.h"
 
-// --- Configuration ---
+// ---------------- CONFIG ----------------
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
+
 #define OLED_SDA 6
 #define OLED_SCL 7
-#define TOUCH_PIN 4 
-#define LDR_PIN 1   
 
-#define DARK_THRESHOLD 500 
-#define SHAKE_THRESHOLD 15.0 
-const unsigned long INTERACTION_LOCK_TIME = 3000; 
-const unsigned long NEGLECT_TIMEOUT = 60000;      
-const unsigned long SAD_TIMEOUT = 120000;        
+#define TOUCH_PIN 4
+#define LDR_PIN   1
+
+#define DARK_THRESHOLD 500
+#define SHAKE_THRESHOLD 15.0
+
+const unsigned long INTERACTION_LOCK_TIME = 3000;
+const unsigned long NEGLECT_TIMEOUT = 60000;
+const unsigned long SAD_TIMEOUT = 120000;
 const unsigned long EYE_MOVE_INTERVAL = 3000;
 const unsigned long MOOD_CYCLE_INTERVAL = 6000;
 
+// ------------- OBJECTS ------------------
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 Adafruit_MPU6050 mpu;
 
+// ------------- STATES -------------------
 enum State { IDLE, LOVE, ANGRY, SLEEPING };
 State currentState = IDLE;
 
-int currentMood = 0;      
-int eyeOffsetX = 0, eyeOffsetY = 0;
+// ------------- VARIABLES ----------------
+int currentMood = 0;
+int eyeOffsetX = 0;
+int eyeOffsetY = 0;
 
-unsigned long lastInteraction = 0; 
-unsigned long stateStartTime = 0;  
+unsigned long lastInteraction = 0;
+unsigned long stateStartTime = 0;
 unsigned long lastEyeMove = 0;
 unsigned long lastMoodChange = 0;
+unsigned long lastBlink = 0;
+unsigned long nextBlinkInterval = 0;
+
 bool wasTouched = false;
 
+// -------- FUNCTION PROTOTYPES -----------
+void drawEyes(int moodID);
+void forceMood(int moodID);
+void blink();
+void updateEyeOffset();
+unsigned long getBlinkInterval(int mood);
+
+// ---------------------------------------
 void setup() {
   Serial.begin(115200);
+
   Wire.begin(OLED_SDA, OLED_SCL);
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) for(;;); 
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    for (;;);
+  }
 
   pinMode(TOUCH_PIN, INPUT);
   pinMode(LDR_PIN, INPUT);
-  mpu.begin();
+
+  if (!mpu.begin()) {
+    Serial.println("MPU6050 not found!");
+    for (;;);
+  }
+
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
   randomSeed(analogRead(0));
+
   lastInteraction = millis();
-  forceMood(0); 
+  forceMood(0);
+
+  lastBlink = millis();
+  nextBlinkInterval = getBlinkInterval(currentMood);
 }
 
+// ---------------------------------------
 void loop() {
   unsigned long now = millis();
 
-  // 1. SENSOR READS
+  // -------- SENSOR READS --------
   int lightLevel = analogRead(LDR_PIN);
   bool isTouched = digitalRead(TOUCH_PIN);
-  
+
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
-  float accelMag = sqrt(sq(a.acceleration.x) + sq(a.acceleration.y) + sq(a.acceleration.z));
+
+  float accelMag = sqrt(
+    sq(a.acceleration.x) +
+    sq(a.acceleration.y) +
+    sq(a.acceleration.z)
+  );
+
   float movement = abs(accelMag - 9.81);
 
-  // 2. STATE MACHINE LOGIC
-
-  // SLEEP LOGIC (Optimized to prevent flicker)
+  // -------- SLEEP LOGIC --------
   if (lightLevel < DARK_THRESHOLD) {
     if (currentState != SLEEPING) {
       currentState = SLEEPING;
-      drawEyes(2); // Draw once and STOP
-      Serial.println(F("Mork is sleeping..."));
+      drawEyes(2);  // sleepy eyes
+      Serial.println("Sleeping...");
     }
-    return; // Exit loop so no other drawing happens
-  } 
-  else if (currentState == SLEEPING) {
-    // This runs ONLY the moment light returns
-    currentState = IDLE;
-    lastInteraction = now; 
-    forceMood(0); 
-    Serial.println(F("Mork woke up!"));
+    return;
   }
 
-  // TOUCH LOGIC
+  if (currentState == SLEEPING) {
+    currentState = IDLE;
+    lastInteraction = now;
+    forceMood(0);
+    Serial.println("Woke up!");
+  }
+
+  // -------- TOUCH --------
   if (isTouched && !wasTouched) {
     currentState = LOVE;
     stateStartTime = now;
-    lastInteraction = now; 
+    lastInteraction = now;
     blink();
-    drawEyes(6); 
+    drawEyes(6);  // love eyes
   }
   wasTouched = isTouched;
 
-  // SHAKE LOGIC
+  // -------- SHAKE --------
   if (movement > SHAKE_THRESHOLD && currentState == IDLE) {
     currentState = ANGRY;
     stateStartTime = now;
     lastInteraction = now;
     blink();
-    drawEyes(3); 
+    drawEyes(3);  // angry eyes
   }
 
-  // 3. EXIT LOCKED STATES
-  if ((currentState == LOVE || currentState == ANGRY) && (now - stateStartTime > INTERACTION_LOCK_TIME)) {
+  // -------- EXIT LOCKED STATES --------
+  if ((currentState == LOVE || currentState == ANGRY) &&
+      (now - stateStartTime > INTERACTION_LOCK_TIME)) {
     currentState = IDLE;
-    forceMood(currentMood); // Return to current background mood
+    forceMood(currentMood);
   }
 
-  // 4. IDLE BEHAVIOR
+  // -------- IDLE BEHAVIOR --------
   if (currentState == IDLE) {
-    // Eye movement logic
+
+    // Blinking
+    if (now - lastBlink > nextBlinkInterval) {
+      blink();
+      drawEyes(currentMood);
+      lastBlink = now;
+      nextBlinkInterval = getBlinkInterval(currentMood);
+    }
+
+    // Eye movement
     if (now - lastEyeMove > EYE_MOVE_INTERVAL) {
       updateEyeOffset();
       drawEyes(currentMood);
       lastEyeMove = now;
     }
 
-    // Mood decay logic
-    unsigned long timeSinceLastPet = now - lastInteraction;
-    if (timeSinceLastPet > SAD_TIMEOUT) {
+    // Mood decay
+    unsigned long idleTime = now - lastInteraction;
+
+    if (idleTime > SAD_TIMEOUT) {
       if (currentMood != 5) forceMood(5);
-    } 
-    else if (timeSinceLastPet > NEGLECT_TIMEOUT) {
+    }
+    else if (idleTime > NEGLECT_TIMEOUT) {
       if (currentMood != 4) forceMood(4);
-    } 
-    else {
-      if (now - lastMoodChange > MOOD_CYCLE_INTERVAL) {
-        int randomMood = random(0, 2); 
-        if(currentMood != randomMood) forceMood(randomMood);
-        lastMoodChange = now;
-      }
+    }
+    else if (now - lastMoodChange > MOOD_CYCLE_INTERVAL) {
+      int newMood = random(0, 2);
+      if (newMood != currentMood) forceMood(newMood);
+      lastMoodChange = now;
     }
   }
 }
 
-// --- Display Helpers ---
+// -------- BLINK INTERVALS --------
+unsigned long getBlinkInterval(int mood) {
+  switch (mood) {
+    case 1: return random(1800, 3200); // happy
+    case 2: return random(6000, 9000); // sleepy
+    case 5: return random(5000, 7000); // sad
+    default: return random(3000, 5000); // neutral
+  }
+}
 
+// -------- DISPLAY HELPERS --------
 void drawEyes(int moodID) {
   display.clearDisplay();
+
   int lx = 20 + eyeOffsetX;
   int rx = 74 + eyeOffsetX;
   int ly = 8 + eyeOffsetY;
   int ry = 8 + eyeOffsetY;
+
   display.drawBitmap(lx, ly, peyes[moodID][0][0], 32, 32, WHITE);
   display.drawBitmap(rx, ry, peyes[moodID][0][1], 32, 32, WHITE);
   display.display();
@@ -159,11 +215,11 @@ void blink() {
   display.drawBitmap(20, 8, eye0, 32, 32, WHITE);
   display.drawBitmap(74, 8, eye0, 32, 32, WHITE);
   display.display();
-  delay(60); 
+  delay(random(50, 100));
 }
 
 void updateEyeOffset() {
-  int choice = random(0, 5);
-  eyeOffsetX = (choice == 1) ? -5 : (choice == 2) ? 5 : 0;
-  eyeOffsetY = (choice == 3) ? -4 : (choice == 4) ? 4 : 0;
+  int r = random(0, 5);
+  eyeOffsetX = (r == 1) ? -5 : (r == 2) ? 5 : 0;
+  eyeOffsetY = (r == 3) ? -4 : (r == 4) ? 4 : 0;
 }

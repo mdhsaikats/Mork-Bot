@@ -1,3 +1,56 @@
+// --- Motor Pin Mapping (ESP32 GPIO) ---
+#define LEFT_MOTOR_IN1 8
+#define LEFT_MOTOR_IN2 9
+#define RIGHT_MOTOR_IN3 10
+#define RIGHT_MOTOR_IN4 20
+#define ENA 21  // Left PWM
+#define ENB 3   // Right PWM
+
+// --- Motor Control Functions ---
+void setMotorSpeed(int ena, int enb) {
+  analogWrite(ENA, ena);
+  analogWrite(ENB, enb);
+}
+
+void moveForward(int speed = 200) {
+  digitalWrite(LEFT_MOTOR_IN1, HIGH);
+  digitalWrite(LEFT_MOTOR_IN2, LOW);
+  digitalWrite(RIGHT_MOTOR_IN3, HIGH);
+  digitalWrite(RIGHT_MOTOR_IN4, LOW);
+  setMotorSpeed(speed, speed);
+}
+
+void moveBackward(int speed = 200) {
+  digitalWrite(LEFT_MOTOR_IN1, LOW);
+  digitalWrite(LEFT_MOTOR_IN2, HIGH);
+  digitalWrite(RIGHT_MOTOR_IN3, LOW);
+  digitalWrite(RIGHT_MOTOR_IN4, HIGH);
+  setMotorSpeed(speed, speed);
+}
+
+void turnLeft(int speed = 200) {
+  digitalWrite(LEFT_MOTOR_IN1, LOW);
+  digitalWrite(LEFT_MOTOR_IN2, HIGH);
+  digitalWrite(RIGHT_MOTOR_IN3, HIGH);
+  digitalWrite(RIGHT_MOTOR_IN4, LOW);
+  setMotorSpeed(speed, speed);
+}
+
+void turnRight(int speed = 200) {
+  digitalWrite(LEFT_MOTOR_IN1, HIGH);
+  digitalWrite(LEFT_MOTOR_IN2, LOW);
+  digitalWrite(RIGHT_MOTOR_IN3, LOW);
+  digitalWrite(RIGHT_MOTOR_IN4, HIGH);
+  setMotorSpeed(speed, speed);
+}
+
+void stopMotors() {
+  digitalWrite(LEFT_MOTOR_IN1, LOW);
+  digitalWrite(LEFT_MOTOR_IN2, LOW);
+  digitalWrite(RIGHT_MOTOR_IN3, LOW);
+  digitalWrite(RIGHT_MOTOR_IN4, LOW);
+  setMotorSpeed(0, 0);
+}
 
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -66,6 +119,14 @@ void giggle(unsigned long now);
 
 // ---------------------------------------
 void setup() {
+      // Motor pins
+      pinMode(LEFT_MOTOR_IN1, OUTPUT);
+      pinMode(LEFT_MOTOR_IN2, OUTPUT);
+      pinMode(RIGHT_MOTOR_IN3, OUTPUT);
+      pinMode(RIGHT_MOTOR_IN4, OUTPUT);
+      pinMode(ENA, OUTPUT);
+      pinMode(ENB, OUTPUT);
+      stopMotors();
     // ...existing code...
   Serial.begin(115200);
 
@@ -100,6 +161,25 @@ void setup() {
 
 // ---------------------------------------
 void loop() {
+    // --- Motor reactions to emotions ---
+    switch (currentState) {
+      case LOVE:
+        moveForward(255); // Move forward fast when happy/loved
+        break;
+      case ANGRY:
+        turnLeft(255); // Spin in place when angry
+        break;
+      case DIZZY:
+        turnRight(180); // Slow spin when dizzy
+        break;
+      case SLEEPING:
+        stopMotors(); // Stop when sleeping
+        break;
+      case IDLE:
+      default:
+        stopMotors(); // Stop in idle
+        break;
+    }
   unsigned long now = millis();
   // ...existing code...
 

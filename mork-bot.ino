@@ -1,3 +1,4 @@
+
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -13,9 +14,11 @@
 #define OLED_SCL 7
 
 
+
 #define TOUCH_PIN 4
 #define LDR_PIN   1
 #define BUZZER_PIN 5
+
 
 #define DARK_THRESHOLD 500
 #define SHAKE_THRESHOLD 15.0
@@ -39,7 +42,6 @@ int currentMood = 0;
 int eyeOffsetX = 0;
 int eyeOffsetY = 0;
 
-
 unsigned long lastInteraction = 0;
 unsigned long stateStartTime = 0;
 unsigned long lastEyeMove = 0;
@@ -52,6 +54,8 @@ bool wasTouched = false;
 unsigned long touchStartTime = 0;
 bool giggleActive = false;
 
+
+
 // -------- FUNCTION PROTOTYPES -----------
 void drawEyes(int moodID);
 void forceMood(int moodID);
@@ -62,6 +66,7 @@ void giggle(unsigned long now);
 
 // ---------------------------------------
 void setup() {
+    // ...existing code...
   Serial.begin(115200);
 
   Wire.begin(OLED_SDA, OLED_SCL);
@@ -74,6 +79,7 @@ void setup() {
   pinMode(LDR_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
+
 
   if (!mpu.begin()) {
     Serial.println("MPU6050 not found!");
@@ -95,6 +101,8 @@ void setup() {
 // ---------------------------------------
 void loop() {
   unsigned long now = millis();
+  // ...existing code...
+
 
   // -------- SENSOR READS --------
   int lightLevel = analogRead(LDR_PIN);

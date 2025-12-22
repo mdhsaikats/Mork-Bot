@@ -1,3 +1,22 @@
+# Motor Connections (ESP32 GPIO)
+
+| Function        | ESP32 GPIO |
+| --------------- | ---------- |
+| Left Motor IN1  | **8**      |
+| Left Motor IN2  | **9**      |
+| Right Motor IN3 | **10**     |
+| Right Motor IN4 | **20**     |
+| ENA (Left PWM)  | **21**     |
+| ENB (Right PWM) | **3**      |
+
+## Motor Behavior by Emotion
+
+- **LOVE:** Moves forward quickly to show excitement.
+- **ANGRY:** Spins in place (turns left) to show frustration.
+- **DIZZY:** Spins slowly (turns right) to show dizziness.
+- **SLEEPING:** Motors stop.
+- **IDLE:** Motors stop.
+
 # Mork Bot
 
 Mork Bot is an interactive, expressive robot built with an ESP32 Super Mini, an OLED display, a buzzer, and a variety of sensors. Mork displays animated eyes, plays cute sounds, and reacts to the environment and user interactions, making it feel alive and engaging. 
@@ -26,6 +45,8 @@ Youtube Demo: https://youtube.com/shorts/6Psl2-D04oY?si=jbgeNS3dgydOk-Tg
 - Jumper wires, breadboard, or custom PCB
 
 ## Wiring Overview
+
+See the Motor Connections table above for motor driver wiring.
 
 - **OLED Display:**
   - SDA → GPIO6
